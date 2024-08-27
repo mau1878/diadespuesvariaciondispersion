@@ -5,10 +5,10 @@ import plotly.express as px
 import time
 
 # Function to fetch stock data with retry logic
-def fetch_stock_data(ticker, start_date, end_date, retries=3, delay=5):
+def fetch_stock_data(ticker, start_date, end_date, interval='1d', retries=3, delay=5):
     for attempt in range(retries):
         try:
-            data = yf.download(ticker, start=start_date, end=end_date)
+            data = yf.download(ticker, start=start_date, end=end_date, interval=interval)
             
             if data.empty:
                 st.error(f"No data found for ticker {ticker} within the specified date range.")
@@ -42,11 +42,28 @@ ticker2 = st.sidebar.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
 start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2020-01-01"))
 end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"))
 
+# User selects the frequency of data
+interval = st.sidebar.radio(
+    "Select Data Frequency:",
+    options=['Daily', 'Weekly', 'Monthly'],
+    index=0
+)
+
+# Map user selection to yfinance interval values
+interval_mapping = {
+    'Daily': '1d',
+    'Weekly': '1wk',
+    'Monthly': '1mo'
+}
+
+# Convert the selected frequency to yfinance compatible interval
+selected_interval = interval_mapping[interval]
+
 # Button to generate the scatter plot
 if st.sidebar.button("Generate Scatter Plot"):
     # Fetch data for both tickers
-    data1 = fetch_stock_data(ticker1, start_date, end_date)
-    data2 = fetch_stock_data(ticker2, start_date, end_date)
+    data1 = fetch_stock_data(ticker1, start_date, end_date, selected_interval)
+    data2 = fetch_stock_data(ticker2, start_date, end_date, selected_interval)
     
     if data1 is not None and data2 is not None:
         # Calculate price variations
@@ -77,7 +94,7 @@ if st.sidebar.button("Generate Scatter Plot"):
                 fig = px.scatter(filtered_data, x='Y_axis_ticker1', y='Y_axis_ticker2', 
                                  color='Year',  # Color by year
                                  trendline="ols",  # Adding the trendline
-                                 title=f"Scatter Plot for {ticker1} vs {ticker2} with Trend Line",
+                                 title=f"Scatter Plot for {ticker1} vs {ticker2} with Trend Line ({interval} Data)",
                                  labels={'Y_axis_ticker1': f'{ticker1} Price Variation (%)', 
                                          'Y_axis_ticker2': f'{ticker2} Price Variation (%)'},
                                  template="plotly_white",
