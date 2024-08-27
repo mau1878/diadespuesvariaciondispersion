@@ -39,8 +39,10 @@ st.title("Scatter Plot of Stock Price Variations with Regression Line")
 st.sidebar.header("User Input")
 ticker1 = st.sidebar.text_input("Enter First YFinance Ticker:", "AAPL").upper()
 ticker2 = st.sidebar.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
-start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2020-01-01"))
-end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"))
+
+# Date selection, allowing users to go back to 1980
+start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2000-01-01"), min_value=pd.to_datetime("1980-01-01"))
+end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"), min_value=pd.to_datetime("1980-01-01"))
 
 # User selects the frequency of data
 interval = st.sidebar.radio(
