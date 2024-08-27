@@ -105,6 +105,16 @@ if st.session_state.combined_data is not None:
         fig.add_hline(y=0, line_dash="dash", line_color="red")
         fig.add_vline(x=0, line_dash="dash", line_color="red")
         
+        # Añadir marca de agua
+        fig.add_annotation(
+            text="MTaurus - X:@mtaurus_ok",
+            xref="paper", yref="paper",
+            x=0.99, y=0.01,
+            showarrow=False,
+            font=dict(size=10, color="rgba(150,150,150,0.5)"),
+            align="right"
+        )
+        
         # Mostrar el gráfico
         st.plotly_chart(fig, use_container_width=True)
     else:
