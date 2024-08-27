@@ -2,7 +2,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import time
 
 # Function to fetch stock data with retry logic
@@ -63,7 +62,7 @@ if st.button("Generate Scatter Plot"):
             combined_data['Year'] = combined_data.index.year
             
             # User input for years to display
-            years = combined_data['Year'].unique()
+            years = sorted(combined_data['Year'].unique())
             selected_years = st.multiselect("Select Years to Display:", options=years, default=years)
             
             # Filter data based on selected years
@@ -87,4 +86,4 @@ if st.button("Generate Scatter Plot"):
                 fig.add_hline(y=0, line_dash="dash", line_color="red")
                 fig.add_vline(x=0, line_dash="dash", line_color="red")
                 
-                st.plotly_chart(fig)
+                st.plotly_chart(fig, use_container_width=True)
