@@ -31,6 +31,10 @@ end_date = st.sidebar.date_input("Fecha de Fin:", pd.to_datetime("today"), min_v
 # Selección de frecuencia
 interval = st.sidebar.radio("Seleccionar Frecuencia de Datos:", ['1d', '1wk', '1mo'], index=0)
 
+# Determinar la etiqueta de intervalo
+interval_labels = {'1d': 'diarios', '1wk': 'semanales', '1mo': 'mensuales'}
+interval_label = interval_labels.get(interval, 'desconocido')
+
 # Obtener datos para ambos tickers
 if 'data1' not in st.session_state:
     st.session_state.data1 = None
@@ -54,19 +58,10 @@ if st.sidebar.button("Generar Gráfico de Dispersión") or st.session_state.data
             # Añadir columnas de año, intervalo y fecha formateada para filtro y visualización
             combined_data['Año'] = combined_data.index.year
             combined_data['Intervalo'] = interval
+            combined_data['Fecha Formateada'] = combined_data.index.strftime('%d-%m-%Y') if interval == '1d' else \
+                                                combined_data.index.strftime('%d-%m-%Y') if interval == '1wk' else \
+                                                combined_data.index.strftime('%m-%Y')
             
-            if interval == '1d':
-                combined_data['Fecha Formateada'] = combined_data.index.strftime('%d-%m-%Y')
-                interval_label = "diarios"
-            elif interval == '1wk':
-                combined_data['Fecha Formateada'] = combined_data.index.strftime('%d-%m-%Y')
-                interval_label = "semanales"
-            elif interval == '1mo':
-                combined_data['Fecha Formateada'] = combined_data.index.strftime('%m-%Y')
-                interval_label = "mensuales"
-            else:
-                interval_label = "desconocido"
-
             st.session_state.data1 = data1
             st.session_state.data2 = data2
             st.session_state.combined_data = combined_data
