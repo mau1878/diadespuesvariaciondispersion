@@ -51,9 +51,16 @@ if st.sidebar.button("Generate Scatter Plot") or st.session_state.data1 is None:
         combined_data.dropna(inplace=True)
 
         if not combined_data.empty:
-            # Add year and interval columns for filtering
+            # Add year, interval, and formatted date columns for filtering and display
             combined_data['Year'] = combined_data.index.year
             combined_data['Interval'] = interval
+            
+            if interval == '1d':
+                combined_data['Formatted Date'] = combined_data.index.strftime('%d-%m-%Y')
+            elif interval == '1wk':
+                combined_data['Formatted Date'] = combined_data.index.strftime('%d-%m-%Y')
+            elif interval == '1mo':
+                combined_data['Formatted Date'] = combined_data.index.strftime('%m-%Y')
 
             st.session_state.data1 = data1
             st.session_state.data2 = data2
@@ -90,7 +97,9 @@ if st.session_state.combined_data is not None:
                          labels={f'Variation_1': f'{ticker1} Variation (%)', 
                                  f'Variation_2': f'{ticker2} Variation (%)'},
                          trendline="ols",
-                         template="plotly_white")
+                         template="plotly_white",
+                         hover_data={'Formatted Date': True, 'Year': False})
+        
         fig.update_layout(showlegend=True)
         fig.update_traces(marker=dict(size=10, line=dict(width=2, color='DarkSlateGrey')))
         fig.add_hline(y=0, line_dash="dash", line_color="red")
