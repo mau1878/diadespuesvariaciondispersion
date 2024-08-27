@@ -64,6 +64,8 @@ if st.sidebar.button("Generar Gráfico de Dispersión") or st.session_state.data
             elif interval == '1mo':
                 combined_data['Fecha Formateada'] = combined_data.index.strftime('%m-%Y')
                 interval_label = "mensuales"
+            else:
+                interval_label = "desconocido"
 
             st.session_state.data1 = data1
             st.session_state.data2 = data2
