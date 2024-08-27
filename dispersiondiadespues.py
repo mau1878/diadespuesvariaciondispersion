@@ -3,111 +3,114 @@ import yfinance as yf
 import pandas as pd
 import plotly.express as px
 
-# Function to fetch stock data
+# Función para obtener datos de las acciones
 @st.cache_data(show_spinner=False)
 def fetch_stock_data(ticker, start_date, end_date, interval):
     data = yf.download(ticker, start=start_date, end=end_date, interval=interval)
-    data.ffill(inplace=True)  # Fill missing dates
+    data.ffill(inplace=True)  # Rellenar fechas faltantes
     return data
 
-# Function to calculate percentage variations
+# Función para calcular variaciones porcentuales
 def calculate_percentage_variations(data):
-    data['Previous_Close'] = data['Adj Close'].shift(1)
-    data['Variation'] = (data['Adj Close'] - data['Previous_Close']) / data['Previous_Close'] * 100
-    return data[['Variation']]
+    data['Cierre_Previo'] = data['Adj Close'].shift(1)
+    data['Variación'] = (data['Adj Close'] - data['Cierre_Previo']) / data['Cierre_Previo'] * 100
+    return data[['Variación']]
 
-# Streamlit interface
-st.title("Scatter Plot of Stock Price Variations")
+# Interfaz de Streamlit
+st.title("Gráfico de Dispersión de Variaciones de Precios")
 
-# Sidebar for user inputs
-st.sidebar.header("User Input")
-ticker1 = st.sidebar.text_input("Enter First Ticker:", "AAPL").upper()
-ticker2 = st.sidebar.text_input("Enter Second Ticker:", "MSFT").upper()
+# Barra lateral para entradas del usuario
+st.sidebar.header("Entrada del Usuario")
+ticker1 = st.sidebar.text_input("Ingrese el Primer Ticker:", "AAPL").upper()
+ticker2 = st.sidebar.text_input("Ingrese el Segundo Ticker:", "MSFT").upper()
 
-# Date selection
-start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2000-01-01"), min_value=pd.to_datetime("1980-01-01"))
-end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"), min_value=pd.to_datetime("1980-01-01"))
+# Selección de fechas
+start_date = st.sidebar.date_input("Fecha de Inicio:", pd.to_datetime("2000-01-01"), min_value=pd.to_datetime("1980-01-01"))
+end_date = st.sidebar.date_input("Fecha de Fin:", pd.to_datetime("today"), min_value=pd.to_datetime("1980-01-01"))
 
-# Frequency selection
-interval = st.sidebar.radio("Select Data Frequency:", ['1d', '1wk', '1mo'], index=0)
+# Selección de frecuencia
+interval = st.sidebar.radio("Seleccionar Frecuencia de Datos:", ['1d', '1wk', '1mo'], index=0)
 
-# Fetch data for both tickers
+# Obtener datos para ambos tickers
 if 'data1' not in st.session_state:
     st.session_state.data1 = None
     st.session_state.data2 = None
     st.session_state.years = []
 
-if st.sidebar.button("Generate Scatter Plot") or st.session_state.data1 is None:
+if st.sidebar.button("Generar Gráfico de Dispersión") or st.session_state.data1 is None:
     data1 = fetch_stock_data(ticker1, start_date, end_date, interval)
     data2 = fetch_stock_data(ticker2, start_date, end_date, interval)
     
     if not data1.empty and not data2.empty:
-        # Calculate percentage variations
+        # Calcular variaciones porcentuales
         data1 = calculate_percentage_variations(data1)
         data2 = calculate_percentage_variations(data2)
 
-        # Merge data on date index
+        # Combinar datos según fechas
         combined_data = pd.merge(data1, data2, left_index=True, right_index=True, suffixes=('_1', '_2'))
         combined_data.dropna(inplace=True)
 
         if not combined_data.empty:
-            # Add year, interval, and formatted date columns for filtering and display
-            combined_data['Year'] = combined_data.index.year
-            combined_data['Interval'] = interval
+            # Añadir columnas de año, intervalo y fecha formateada para filtro y visualización
+            combined_data['Año'] = combined_data.index.year
+            combined_data['Intervalo'] = interval
             
             if interval == '1d':
-                combined_data['Formatted Date'] = combined_data.index.strftime('%d-%m-%Y')
+                combined_data['Fecha Formateada'] = combined_data.index.strftime('%d-%m-%Y')
+                interval_label = "diarios"
             elif interval == '1wk':
-                combined_data['Formatted Date'] = combined_data.index.strftime('%d-%m-%Y')
+                combined_data['Fecha Formateada'] = combined_data.index.strftime('%d-%m-%Y')
+                interval_label = "semanales"
             elif interval == '1mo':
-                combined_data['Formatted Date'] = combined_data.index.strftime('%m-%Y')
+                combined_data['Fecha Formateada'] = combined_data.index.strftime('%m-%Y')
+                interval_label = "mensuales"
 
             st.session_state.data1 = data1
             st.session_state.data2 = data2
             st.session_state.combined_data = combined_data
-            st.session_state.years = combined_data['Year'].unique().tolist()
+            st.session_state.years = combined_data['Año'].unique().tolist()
         else:
-            st.error("No combined data available after merging the two tickers.")
+            st.error("No hay datos combinados disponibles después de fusionar los dos tickers.")
     else:
-        st.error("One of the tickers returned an empty dataset. Please check the tickers or the date range.")
+        st.error("Uno de los tickers devolvió un conjunto de datos vacío. Por favor, revise los tickers o el rango de fechas.")
 
 if st.session_state.combined_data is not None:
     combined_data = st.session_state.combined_data
     
-    # Year filter with activate/deactivate all options
-    st.sidebar.write("Year Filter")
-    if st.sidebar.button("Select All Years"):
+    # Filtro de año con opciones de activar/desactivar todo
+    st.sidebar.write("Filtro de Años")
+    if st.sidebar.button("Seleccionar Todos los Años"):
         selected_years = st.session_state.years
-    elif st.sidebar.button("Deselect All Years"):
+    elif st.sidebar.button("Deseleccionar Todos los Años"):
         selected_years = []
     else:
-        selected_years = st.sidebar.multiselect("Select Years to Display:", st.session_state.years, default=st.session_state.years)
+        selected_years = st.sidebar.multiselect("Seleccionar Años para Mostrar:", st.session_state.years, default=st.session_state.years)
     
-    # Filter based on selected years
-    filtered_data = combined_data[combined_data['Year'].isin(selected_years)]
+    # Filtrar según los años seleccionados
+    filtered_data = combined_data[combined_data['Año'].isin(selected_years)]
     
     if not filtered_data.empty:
-        # Create the scatter plot
+        # Crear gráfico de dispersión
         fig = px.scatter(filtered_data, 
-                         x='Variation_1', 
-                         y='Variation_2', 
-                         color='Year',
-                         symbol='Interval',
-                         title=f"Price Variation Scatter Plot for {ticker1} and {ticker2}",
-                         labels={f'Variation_1': f'{ticker1} Variation (%)', 
-                                 f'Variation_2': f'{ticker2} Variation (%)'},
+                         x='Variación_1', 
+                         y='Variación_2', 
+                         color='Año',
+                         symbol='Intervalo',
+                         title=f"Gráfico de Dispersión de Variaciones de Precios para {ticker1} y {ticker2} ({interval_label})",
+                         labels={f'Variación_1': f'Variación de {ticker1} (%)', 
+                                 f'Variación_2': f'Variación de {ticker2} (%)'},
                          trendline="ols",
                          template="plotly_white",
-                         hover_data={'Formatted Date': True, 'Year': False})
+                         hover_data={'Fecha Formateada': True, 'Año': False})
         
         fig.update_layout(showlegend=True)
         fig.update_traces(marker=dict(size=10, line=dict(width=2, color='DarkSlateGrey')))
         fig.add_hline(y=0, line_dash="dash", line_color="red")
         fig.add_vline(x=0, line_dash="dash", line_color="red")
         
-        # Display the plot
+        # Mostrar el gráfico
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.error("No data available for the selected years.")
+        st.error("No hay datos disponibles para los años seleccionados.")
 else:
-    st.warning("Please generate the scatter plot first.")
+    st.warning("Por favor, genere el gráfico de dispersión primero.")
