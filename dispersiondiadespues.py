@@ -11,7 +11,7 @@ def fetch_stock_data(ticker, start_date, end_date, retries=3, delay=5):
             data = yf.download(ticker, start=start_date, end=end_date)
             
             if data.empty:
-                st.error("No data found for the specified ticker and date range.")
+                st.error(f"No data found for ticker {ticker} within the specified date range.")
                 return None
             
             # Handle missing dates by forward-filling
@@ -20,49 +20,55 @@ def fetch_stock_data(ticker, start_date, end_date, retries=3, delay=5):
         
         except Exception as e:
             if attempt < retries - 1:
-                st.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds...")
+                st.warning(f"Attempt {attempt + 1} failed for ticker {ticker}: {e}. Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                st.error(f"An error occurred while fetching data: {e}")
+                st.error(f"An error occurred while fetching data for ticker {ticker}: {e}")
                 return None
 
 # Function to calculate percentage variations
 def calculate_percentage_variations(data):
     data['Previous_Close'] = data['Adj Close'].shift(1)
-    data['Next_Close'] = data['Adj Close'].shift(-1)
     data['Y_axis'] = (data['Adj Close'] - data['Previous_Close']) / data['Previous_Close'] * 100
-    data['X_axis'] = (data['Next_Close'] - data['Adj Close']) / data['Adj Close'] * 100
-    
-    # Drop rows with missing values in X or Y axis
-    data.dropna(subset=['X_axis', 'Y_axis'], inplace=True)
-    return data
+    return data[['Y_axis']]
 
 # Streamlit interface
-st.title("Scatter Plot of Stock Price Variations with Trend Line")
+st.title("Scatter Plot of Stock Price Variations with Regression Line")
 
 # User inputs
-ticker = st.text_input("Enter YFinance Ticker:", "AAPL").upper()
+ticker1 = st.text_input("Enter First YFinance Ticker:", "AAPL").upper()
+ticker2 = st.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
 start_date = st.date_input("Start Date:", pd.to_datetime("2020-01-01"))
 end_date = st.date_input("End Date:", pd.to_datetime("today"))
 
 if st.button("Generate Scatter Plot"):
-    data = fetch_stock_data(ticker, start_date, end_date)
+    # Fetch data for both tickers
+    data1 = fetch_stock_data(ticker1, start_date, end_date)
+    data2 = fetch_stock_data(ticker2, start_date, end_date)
     
-    if data is not None:
+    if data1 is not None and data2 is not None:
         # Calculate price variations
-        data = calculate_percentage_variations(data)
+        data1 = calculate_percentage_variations(data1)
+        data2 = calculate_percentage_variations(data2)
         
-        # Plotting the scatter plot with trend line
-        fig = px.scatter(data, x='X_axis', y='Y_axis', 
-                         trendline="ols",  # Adding the trendline
-                         title=f"Scatter Plot for {ticker} with Trend Line",
-                         labels={'X_axis': 'Price Variation After (%)', 
-                                 'Y_axis': 'Price Variation Before (%)'},
-                         template="plotly_white")
+        # Merge data on date index
+        combined_data = pd.merge(data1, data2, left_index=True, right_index=True, suffixes=('_ticker1', '_ticker2'))
+        combined_data.dropna(inplace=True)
         
-        fig.update_traces(marker=dict(size=10, color='blue', line=dict(width=2, color='DarkSlateGrey')))
-        fig.update_layout(showlegend=False, height=600)
-        fig.add_hline(y=0, line_dash="dash", line_color="red")
-        fig.add_vline(x=0, line_dash="dash", line_color="red")
-        
-        st.plotly_chart(fig)
+        if combined_data.empty:
+            st.error("No overlapping data found for the specified date range and tickers.")
+        else:
+            # Plotting the scatter plot with trend line
+            fig = px.scatter(combined_data, x='Y_axis_ticker1', y='Y_axis_ticker2', 
+                             trendline="ols",  # Adding the trendline
+                             title=f"Scatter Plot for {ticker1} vs {ticker2} with Trend Line",
+                             labels={'Y_axis_ticker1': f'{ticker1} Price Variation (%)', 
+                                     'Y_axis_ticker2': f'{ticker2} Price Variation (%)'},
+                             template="plotly_white")
+            
+            fig.update_traces(marker=dict(size=10, color='blue', line=dict(width=2, color='DarkSlateGrey')))
+            fig.update_layout(showlegend=False, height=600)
+            fig.add_hline(y=0, line_dash="dash", line_color="red")
+            fig.add_vline(x=0, line_dash="dash", line_color="red")
+            
+            st.plotly_chart(fig)
