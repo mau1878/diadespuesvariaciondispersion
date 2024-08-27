@@ -42,7 +42,7 @@ ticker2 = st.sidebar.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
 start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2020-01-01"))
 end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"))
 
-# Fetch data and display plot when button is clicked
+# Button to generate the scatter plot
 if st.sidebar.button("Generate Scatter Plot"):
     # Fetch data for both tickers
     data1 = fetch_stock_data(ticker1, start_date, end_date)
