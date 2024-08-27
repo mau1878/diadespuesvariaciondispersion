@@ -5,15 +5,20 @@ import plotly.express as px
 
 # Function to fetch stock data
 def fetch_stock_data(ticker, start_date, end_date):
-    data = yf.download(ticker, start=start_date, end=end_date)
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        
+        if data.empty:
+            st.error("No data found for the specified ticker and date range.")
+            return None
+        
+        # Handle missing dates by forward-filling
+        data.ffill(inplace=True)
+        return data
     
-    if data.empty:
-        st.error("No data found for the specified ticker and date range.")
+    except Exception as e:
+        st.error(f"An error occurred while fetching data: {e}")
         return None
-    
-    # Handle missing dates by forward-filling
-    data.ffill(inplace=True)
-    return data
 
 # Function to calculate percentage variations
 def calculate_percentage_variations(data):
