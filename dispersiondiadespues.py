@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import time
 
 # Function to fetch stock data with retry logic
@@ -61,19 +62,29 @@ if st.button("Generate Scatter Plot"):
             # Add a column for the year
             combined_data['Year'] = combined_data.index.year
             
-            # Plotting the scatter plot with trend line
-            fig = px.scatter(combined_data, x='Y_axis_ticker1', y='Y_axis_ticker2', 
-                             color='Year',  # Color by year
-                             trendline="ols",  # Adding the trendline
-                             title=f"Scatter Plot for {ticker1} vs {ticker2} with Trend Line",
-                             labels={'Y_axis_ticker1': f'{ticker1} Price Variation (%)', 
-                                     'Y_axis_ticker2': f'{ticker2} Price Variation (%)'},
-                             template="plotly_white",
-                             color_continuous_scale=px.colors.sequential.Viridis)  # Color scale
+            # User input for years to display
+            years = combined_data['Year'].unique()
+            selected_years = st.multiselect("Select Years to Display:", options=years, default=years)
             
-            fig.update_traces(marker=dict(size=10, line=dict(width=2, color='DarkSlateGrey')))
-            fig.update_layout(showlegend=True, height=600)
-            fig.add_hline(y=0, line_dash="dash", line_color="red")
-            fig.add_vline(x=0, line_dash="dash", line_color="red")
+            # Filter data based on selected years
+            filtered_data = combined_data[combined_data['Year'].isin(selected_years)]
             
-            st.plotly_chart(fig)
+            if filtered_data.empty:
+                st.error("No data available for the selected years.")
+            else:
+                # Plotting the scatter plot with trend line
+                fig = px.scatter(filtered_data, x='Y_axis_ticker1', y='Y_axis_ticker2', 
+                                 color='Year',  # Color by year
+                                 trendline="ols",  # Adding the trendline
+                                 title=f"Scatter Plot for {ticker1} vs {ticker2} with Trend Line",
+                                 labels={'Y_axis_ticker1': f'{ticker1} Price Variation (%)', 
+                                         'Y_axis_ticker2': f'{ticker2} Price Variation (%)'},
+                                 template="plotly_white",
+                                 color_continuous_scale=px.colors.sequential.Viridis)  # Color scale
+                
+                fig.update_traces(marker=dict(size=10, line=dict(width=2, color='DarkSlateGrey')))
+                fig.update_layout(showlegend=True, height=600)
+                fig.add_hline(y=0, line_dash="dash", line_color="red")
+                fig.add_vline(x=0, line_dash="dash", line_color="red")
+                
+                st.plotly_chart(fig)
