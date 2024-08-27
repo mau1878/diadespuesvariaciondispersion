@@ -1,52 +1,53 @@
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
-import streamlit as st
+from datetime import datetime
 
-# Function to fetch the closest previous and next trading day data
-def fetch_closest_data(ticker, date):
-    stock_data = yf.download(ticker, start=date, end=pd.to_datetime(date) + pd.DateOffset(days=7))
-    if stock_data.empty:
-        return None, None, None
+# Function to fetch stock data
+def fetch_stock_data(ticker, start_date, end_date):
+    stock = yf.download(ticker, start=start_date, end=end_date)
+    
+    # If no data is available for the given date, take the previous available value
+    stock = stock.asfreq('B', method='pad')
+    return stock
 
-    # Find the closest previous, given date, and next trading days
-    dates = stock_data.index
-    prev_day = dates[dates < date][-1]
-    next_day = dates[dates > date][0]
-    given_day = dates[dates == date][0] if date in dates else prev_day
+# Function to calculate price variations
+def calculate_variations(stock_data):
+    stock_data['Previous_Close'] = stock_data['Adj Close'].shift(1)
+    stock_data['Next_Close'] = stock_data['Adj Close'].shift(-1)
 
-    return stock_data.loc[prev_day], stock_data.loc[given_day], stock_data.loc[next_day]
+    # Calculate the percentage variations
+    stock_data['Price_Var_Y'] = (stock_data['Adj Close'] - stock_data['Previous_Close']) / stock_data['Previous_Close'] * 100
+    stock_data['Price_Var_X'] = (stock_data['Next_Close'] - stock_data['Adj Close']) / stock_data['Adj Close'] * 100
 
-# Calculate percentage variation
-def calculate_variation(price_start, price_end):
-    return ((price_end - price_start) / price_start) * 100
+    # Drop rows where percentage change cannot be computed (e.g., at the start or end)
+    stock_data.dropna(subset=['Price_Var_Y', 'Price_Var_X'], inplace=True)
 
-# Streamlit app interface
-st.title('Scatter Plot of Price Variation')
-ticker = st.text_input('Enter the Yfinance Ticker:')
-date_input = st.date_input('Select a Date:', value=pd.to_datetime('2024-08-01'))
+    return stock_data
 
-if ticker and date_input:
-    prev_data, given_data, next_data = fetch_closest_data(ticker, pd.to_datetime(date_input))
+# Function to plot the data
+def plot_scatter(stock_data, ticker):
+    fig = px.scatter(stock_data, x='Price_Var_X', y='Price_Var_Y',
+                     labels={
+                         'Price_Var_X': 'Next Day Price Variation (%)',
+                         'Price_Var_Y': 'Previous Day Price Variation (%)'
+                     },
+                     title=f'Scatter Plot of {ticker} Price Variations',
+                     template='plotly_dark')
+    fig.update_traces(marker=dict(size=10, color='LightSkyBlue', line=dict(width=1, color='DarkSlateGrey')))
+    fig.show()
 
-    if prev_data is not None and given_data is not None and next_data is not None:
-        prev_variation = calculate_variation(prev_data['Close'], given_data['Close'])
-        next_variation = calculate_variation(given_data['Close'], next_data['Close'])
+# Main script
+if __name__ == "__main__":
+    ticker = input("Enter the Yfinance ticker symbol: ").upper()
+    start_date = input("Enter the start date (YYYY-MM-DD): ")
+    end_date = input(f"Enter the end date (YYYY-MM-DD, default is today): ") or datetime.today().strftime('%Y-%m-%d')
 
-        # Create scatter plot
-        scatter_data = pd.DataFrame({
-            'X Axis (Next Day Variation)': [next_variation],
-            'Y Axis (Previous Day Variation)': [prev_variation],
-            'Ticker': [ticker]
-        })
-
-        fig = px.scatter(scatter_data, x='X Axis (Next Day Variation)', y='Y Axis (Previous Day Variation)',
-                         text='Ticker', size_max=15)
-        fig.update_traces(marker=dict(size=20, color='blue'), textposition='top center')
-        fig.update_layout(title=f'Price Variation for {ticker} on {date_input}',
-                          xaxis_title='Next Day Price Variation (%)',
-                          yaxis_title='Previous Day Price Variation (%)')
-
-        st.plotly_chart(fig)
-    else:
-        st.write('No data available for the selected date.')
+    # Fetch the data
+    stock_data = fetch_stock_data(ticker, start_date, end_date)
+    
+    # Calculate the price variations
+    stock_data = calculate_variations(stock_data)
+    
+    # Plot the data
+    plot_scatter(stock_data, ticker)
