@@ -42,6 +42,7 @@ ticker2 = st.sidebar.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
 start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2020-01-01"))
 end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"))
 
+# Fetch data and display plot when button is clicked
 if st.sidebar.button("Generate Scatter Plot"):
     # Fetch data for both tickers
     data1 = fetch_stock_data(ticker1, start_date, end_date)
@@ -88,3 +89,5 @@ if st.sidebar.button("Generate Scatter Plot"):
                 fig.add_vline(x=0, line_dash="dash", line_color="red")
                 
                 st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("Please enter valid tickers and date range.")
