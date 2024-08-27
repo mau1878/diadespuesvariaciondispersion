@@ -35,13 +35,14 @@ def calculate_percentage_variations(data):
 # Streamlit interface
 st.title("Scatter Plot of Stock Price Variations with Regression Line")
 
-# User inputs
-ticker1 = st.text_input("Enter First YFinance Ticker:", "AAPL").upper()
-ticker2 = st.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
-start_date = st.date_input("Start Date:", pd.to_datetime("2020-01-01"))
-end_date = st.date_input("End Date:", pd.to_datetime("today"))
+# Sidebar for user inputs
+st.sidebar.header("User Input")
+ticker1 = st.sidebar.text_input("Enter First YFinance Ticker:", "AAPL").upper()
+ticker2 = st.sidebar.text_input("Enter Second YFinance Ticker:", "MSFT").upper()
+start_date = st.sidebar.date_input("Start Date:", pd.to_datetime("2020-01-01"))
+end_date = st.sidebar.date_input("End Date:", pd.to_datetime("today"))
 
-if st.button("Generate Scatter Plot"):
+if st.sidebar.button("Generate Scatter Plot"):
     # Fetch data for both tickers
     data1 = fetch_stock_data(ticker1, start_date, end_date)
     data2 = fetch_stock_data(ticker2, start_date, end_date)
@@ -63,7 +64,7 @@ if st.button("Generate Scatter Plot"):
             
             # User input for years to display
             years = sorted(combined_data['Year'].unique())
-            selected_years = st.multiselect("Select Years to Display:", options=years, default=years)
+            selected_years = st.sidebar.multiselect("Select Years to Display:", options=years, default=years)
             
             # Filter data based on selected years
             filtered_data = combined_data[combined_data['Year'].isin(selected_years)]
