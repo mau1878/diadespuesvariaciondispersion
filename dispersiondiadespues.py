@@ -2,23 +2,29 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
+import time
 
-# Function to fetch stock data
-def fetch_stock_data(ticker, start_date, end_date):
-    try:
-        data = yf.download(ticker, start=start_date, end=end_date)
+# Function to fetch stock data with retry logic
+def fetch_stock_data(ticker, start_date, end_date, retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            data = yf.download(ticker, start=start_date, end=end_date)
+            
+            if data.empty:
+                st.error("No data found for the specified ticker and date range.")
+                return None
+            
+            # Handle missing dates by forward-filling
+            data.ffill(inplace=True)
+            return data
         
-        if data.empty:
-            st.error("No data found for the specified ticker and date range.")
-            return None
-        
-        # Handle missing dates by forward-filling
-        data.ffill(inplace=True)
-        return data
-    
-    except Exception as e:
-        st.error(f"An error occurred while fetching data: {e}")
-        return None
+        except Exception as e:
+            if attempt < retries - 1:
+                st.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                st.error(f"An error occurred while fetching data: {e}")
+                return None
 
 # Function to calculate percentage variations
 def calculate_percentage_variations(data):
