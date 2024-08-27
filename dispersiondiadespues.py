@@ -1,53 +1,56 @@
+import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
 
 # Function to fetch stock data
 def fetch_stock_data(ticker, start_date, end_date):
-    stock = yf.download(ticker, start=start_date, end=end_date)
+    data = yf.download(ticker, start=start_date, end=end_date)
     
-    # If no data is available for the given date, take the previous available value
-    stock = stock.asfreq('B', method='pad')
-    return stock
-
-# Function to calculate price variations
-def calculate_variations(stock_data):
-    stock_data['Previous_Close'] = stock_data['Adj Close'].shift(1)
-    stock_data['Next_Close'] = stock_data['Adj Close'].shift(-1)
-
-    # Calculate the percentage variations
-    stock_data['Price_Var_Y'] = (stock_data['Adj Close'] - stock_data['Previous_Close']) / stock_data['Previous_Close'] * 100
-    stock_data['Price_Var_X'] = (stock_data['Next_Close'] - stock_data['Adj Close']) / stock_data['Adj Close'] * 100
-
-    # Drop rows where percentage change cannot be computed (e.g., at the start or end)
-    stock_data.dropna(subset=['Price_Var_Y', 'Price_Var_X'], inplace=True)
-
-    return stock_data
-
-# Function to plot the data
-def plot_scatter(stock_data, ticker):
-    fig = px.scatter(stock_data, x='Price_Var_X', y='Price_Var_Y',
-                     labels={
-                         'Price_Var_X': 'Next Day Price Variation (%)',
-                         'Price_Var_Y': 'Previous Day Price Variation (%)'
-                     },
-                     title=f'Scatter Plot of {ticker} Price Variations',
-                     template='plotly_dark')
-    fig.update_traces(marker=dict(size=10, color='LightSkyBlue', line=dict(width=1, color='DarkSlateGrey')))
-    fig.show()
-
-# Main script
-if __name__ == "__main__":
-    ticker = input("Enter the Yfinance ticker symbol: ").upper()
-    start_date = input("Enter the start date (YYYY-MM-DD): ")
-    end_date = input(f"Enter the end date (YYYY-MM-DD, default is today): ") or datetime.today().strftime('%Y-%m-%d')
-
-    # Fetch the data
-    stock_data = fetch_stock_data(ticker, start_date, end_date)
+    if data.empty:
+        st.error("No data found for the specified ticker and date range.")
+        return None
     
-    # Calculate the price variations
-    stock_data = calculate_variations(stock_data)
+    # Handle missing dates by forward-filling
+    data.ffill(inplace=True)
+    return data
+
+# Function to calculate percentage variations
+def calculate_percentage_variations(data):
+    data['Previous_Close'] = data['Adj Close'].shift(1)
+    data['Next_Close'] = data['Adj Close'].shift(-1)
+    data['Y_axis'] = (data['Adj Close'] - data['Previous_Close']) / data['Previous_Close'] * 100
+    data['X_axis'] = (data['Next_Close'] - data['Adj Close']) / data['Adj Close'] * 100
     
-    # Plot the data
-    plot_scatter(stock_data, ticker)
+    # Drop rows with missing values in X or Y axis
+    data.dropna(subset=['X_axis', 'Y_axis'], inplace=True)
+    return data
+
+# Streamlit interface
+st.title("Scatter Plot of Stock Price Variations")
+
+# User inputs
+ticker = st.text_input("Enter YFinance Ticker:", "AAPL").upper()
+start_date = st.date_input("Start Date:", pd.to_datetime("2020-01-01"))
+end_date = st.date_input("End Date:", pd.to_datetime("today"))
+
+if st.button("Generate Scatter Plot"):
+    data = fetch_stock_data(ticker, start_date, end_date)
+    
+    if data is not None:
+        # Calculate price variations
+        data = calculate_percentage_variations(data)
+        
+        # Plotting the scatter plot
+        fig = px.scatter(data, x='X_axis', y='Y_axis', 
+                         title=f"Scatter Plot for {ticker}",
+                         labels={'X_axis': 'Price Variation After (%)', 
+                                 'Y_axis': 'Price Variation Before (%)'},
+                         template="plotly_white")
+        
+        fig.update_traces(marker=dict(size=10, color='blue', line=dict(width=2, color='DarkSlateGrey')))
+        fig.update_layout(showlegend=False, height=600)
+        fig.add_hline(y=0, line_dash="dash", line_color="red")
+        fig.add_vline(x=0, line_dash="dash", line_color="red")
+        
+        st.plotly_chart(fig)
