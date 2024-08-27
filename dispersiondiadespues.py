@@ -51,8 +51,9 @@ if st.sidebar.button("Generate Scatter Plot") or st.session_state.data1 is None:
         combined_data.dropna(inplace=True)
 
         if not combined_data.empty:
-            # Add year column for filtering
+            # Add year and interval columns for filtering
             combined_data['Year'] = combined_data.index.year
+            combined_data['Interval'] = interval
 
             st.session_state.data1 = data1
             st.session_state.data2 = data2
@@ -62,8 +63,14 @@ if st.sidebar.button("Generate Scatter Plot") or st.session_state.data1 is None:
 if st.session_state.combined_data is not None:
     combined_data = st.session_state.combined_data
     
-    # Year filter
-    selected_years = st.sidebar.multiselect("Select Years to Display:", st.session_state.years, default=st.session_state.years)
+    # Year filter with activate/deactivate all options
+    st.sidebar.write("Year Filter")
+    if st.sidebar.button("Select All Years"):
+        selected_years = st.session_state.years
+    elif st.sidebar.button("Deselect All Years"):
+        selected_years = []
+    else:
+        selected_years = st.sidebar.multiselect("Select Years to Display:", st.session_state.years, default=st.session_state.years)
     
     # Filter based on selected years
     filtered_data = combined_data[combined_data['Year'].isin(selected_years)]
@@ -74,6 +81,7 @@ if st.session_state.combined_data is not None:
                          x='Variation_1', 
                          y='Variation_2', 
                          color='Year',
+                         symbol='Interval',
                          title=f"Price Variation Scatter Plot for {ticker1} and {ticker2}",
                          labels={f'Variation_1': f'{ticker1} Variation (%)', 
                                  f'Variation_2': f'{ticker2} Variation (%)'},
