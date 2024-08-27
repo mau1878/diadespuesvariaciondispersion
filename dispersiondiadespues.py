@@ -59,6 +59,10 @@ if st.sidebar.button("Generate Scatter Plot") or st.session_state.data1 is None:
             st.session_state.data2 = data2
             st.session_state.combined_data = combined_data
             st.session_state.years = combined_data['Year'].unique().tolist()
+        else:
+            st.error("No combined data available after merging the two tickers.")
+    else:
+        st.error("One of the tickers returned an empty dataset. Please check the tickers or the date range.")
 
 if st.session_state.combined_data is not None:
     combined_data = st.session_state.combined_data
