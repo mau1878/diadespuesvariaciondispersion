@@ -86,6 +86,7 @@ if st.sidebar.button("Generate Scatter Plot"):
             years = sorted(combined_data['Year'].unique())
             selected_years = st.sidebar.multiselect("Select Years to Display:", options=years, default=years)
             
+            # Only filter and plot if there are selected years
             if selected_years:
                 # Filter data based on selected years
                 filtered_data = combined_data[combined_data['Year'].isin(selected_years)]
