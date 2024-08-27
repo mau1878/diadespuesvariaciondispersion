@@ -27,7 +27,7 @@ def calculate_percentage_variations(data):
     return data
 
 # Streamlit interface
-st.title("Scatter Plot of Stock Price Variations")
+st.title("Scatter Plot of Stock Price Variations with Trend Line")
 
 # User inputs
 ticker = st.text_input("Enter YFinance Ticker:", "AAPL").upper()
@@ -41,9 +41,10 @@ if st.button("Generate Scatter Plot"):
         # Calculate price variations
         data = calculate_percentage_variations(data)
         
-        # Plotting the scatter plot
+        # Plotting the scatter plot with trend line
         fig = px.scatter(data, x='X_axis', y='Y_axis', 
-                         title=f"Scatter Plot for {ticker}",
+                         trendline="ols",  # Adding the trendline
+                         title=f"Scatter Plot for {ticker} with Trend Line",
                          labels={'X_axis': 'Price Variation After (%)', 
                                  'Y_axis': 'Price Variation Before (%)'},
                          template="plotly_white")
