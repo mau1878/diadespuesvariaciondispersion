@@ -25,7 +25,7 @@ ticker1 = st.sidebar.text_input("Ingrese el Primer Ticker:", "AAPL").upper()
 ticker2 = st.sidebar.text_input("Ingrese el Segundo Ticker:", "MSFT").upper()
 
 # Selección de fechas
-start_date = st.sidebar.date_input("Fecha de Inicio:", pd.to_datetime("2000-01-01"), min_value=pd.to_datetime("1980-01-01"))
+start_date = st.sidebar.date_input("Fecha de Inicio:", pd.to_datetime("2024-01-01"), min_value=pd.to_datetime("1980-01-01"))
 end_date = st.sidebar.date_input("Fecha de Fin:", pd.to_datetime("today"), min_value=pd.to_datetime("1980-01-01"))
 
 # Selección de frecuencia
